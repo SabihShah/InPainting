@@ -10,7 +10,7 @@ A collection of notebooks and a Gradio GUI for AI-powered fashion image editing.
 ├── SAM-SD2.ipynb          # SAM + Stable Diffusion 2 inpainting
 ├── SAM2-SDXL.ipynb        # SAM 2 + Stable Diffusion XL inpainting
 ├── SegFormer-SDXL.ipynb   # SegFormer (clothing-specific) + SDXL inpainting
-└── GUI.py                 # Gradio web interface
+└── app.py                 # Gradio web interface (multi-mask support)
 ```
 
 ---
@@ -20,12 +20,22 @@ A collection of notebooks and a Gradio GUI for AI-powered fashion image editing.
 Each notebook follows the same two-stage pipeline:
 
 ```
-Input Image → Segmentation Model → Mask → Diffusion Model → Edited Image
+Input Image → Segmentation Model → Mask(s) → Diffusion Model → Edited Image
 ```
 
 **Stage 1 — Segmentation** identifies and isolates the region to edit (shirt, hair, background, etc.)
 
 **Stage 2 — Inpainting** fills the masked region with new content guided by a text prompt, while preserving everything outside the mask.
+
+The GUI supports **multiple edits in a single run** — each edit is applied sequentially, with the output of one step feeding into the next:
+
+```
+Original Image
+    ↓
+Edit 1: Hair mask + "blonde hair"        → Intermediate Image
+    ↓
+Edit 2: Upper-clothes mask + "blue shirt" → Final Image
+```
 
 ---
 
@@ -80,20 +90,20 @@ Replaces SAM with **SegFormer** (`mattmdjaga/segformer_b2_clothes`), a transform
 
 ---
 
-## 🖥️ GUI (GUI.py)
+## 🖥️ GUI (app.py)
 
-A Gradio web interface that wraps the SegFormer + SDXL pipeline into a 3-step UI.
+A Gradio web interface that wraps the SegFormer + SDXL pipeline into a 3-step UI with support for editing multiple regions in a single run.
 
 ### Running the GUI
 
 ```bash
-python fashion_editor.py
+python app.py
 ```
 
 Or in Colab:
 
 ```python
-!python fashion_editor.py
+!python app.py
 ```
 
 ### Steps
@@ -101,11 +111,15 @@ Or in Colab:
 **Step 1 — Upload & Segment**
 Upload an image and click "Segment Image". The app displays a color-coded segmentation map and populates a dropdown with only the labels detected in your image.
 
-**Step 2 — Select Item to Edit**
-Pick a label from the dropdown (e.g. "Upper-clothes", "Hair"). A mask preview updates automatically so you can verify the correct region is selected.
+**Step 2 — Select Items & Add Edits**
+Pick a label from the dropdown (e.g. "Upper-clothes", "Hair"). A mask preview updates automatically so you can verify the correct region is selected. Enter a prompt for that region and click **+ Add to Queue**. Repeat for as many regions as you want to edit. The edit queue shows a live summary of all pending edits. Use **🗑 Clear Queue** to start over.
 
-**Step 3 — Enter Prompt & Generate**
-Enter a text prompt describing what you want (e.g. _"blue denim jacket with gold buttons"_) and click Generate.
+**Step 3 — Generate**
+Click **🎨 Generate All Edits**. Each edit is applied sequentially in queue order. A generation log shows ✅/❌ status for each edit so you can see exactly what succeeded.
+
+### Notes on Edit Order
+
+Since edits are applied sequentially, **order matters** — the output of each step feeds into the next. Add edits in the order you want them applied. If regions overlap (e.g. hair overlapping a shirt collar), apply the more important edit last so it has the final say.
 
 ---
 
@@ -183,4 +197,3 @@ The SegFormer model downloads automatically from HuggingFace on first run.
 
 - Python 3.10+
 - CUDA-capable GPU (8GB+ VRAM recommended)
-- Google Colab (T4 GPU) works for all notebooks
