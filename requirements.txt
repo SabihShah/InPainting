@@ -1,0 +1,5 @@
+!pip install regex tqdm
+!pip install diffusers transformers accelerate scipy
+!pip install -U xformers
+!pip install opencv-python
+!pip install transformers
